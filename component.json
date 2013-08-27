@@ -1,0 +1,29 @@
+{
+	"name": "sg-upload-to-s3",
+	"repo": "davidtsuji/sg-upload-to-s3",
+	"description": "Upload multiple files simultaneously directly from the browser to s3 using a queue. Extends https://github.com/component/s3.",
+	"version": "0.0.1",
+	"main": "index.js",
+	"scripts": [
+		"index.js"
+	],
+	"dependencies": {
+		"caolan/async": "*",
+		"component/emitter": "*",
+		"component/mime": "*",
+		"component/s3": "*",
+		"component/type": "*",
+		"davidtsuji/sg-uid": "*"
+	},
+	"files": [
+		"sign.js"
+	],
+	"development":{
+		"visionmedia/mocha": "*",
+		"component/dom": "*",
+		"component/drop": "*",
+		"component/assert": "*",
+		"davidtsuji/angular.js": "*",
+		"davidtsuji/sg-apply-scope": "*"
+	}
+}

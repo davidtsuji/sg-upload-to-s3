@@ -1,0 +1,7 @@
+{
+	"name": "sg-upload-to-s3",
+	"version": "0.0.1",
+	"dependencies": {
+		"connect": "*"
+	}
+}

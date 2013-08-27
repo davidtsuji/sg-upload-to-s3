@@ -1,0 +1,45 @@
+.glyphicon.glyphicon-remove {
+
+	position: absolute;
+	top: 12px;
+	left: -25px;
+
+} 
+
+.glyphicon.glyphicon-remove:hover {
+
+	cursor: pointer;
+	color: #C33925;
+
+}
+
+.well.drop {
+	
+	position: relative;
+	
+}
+
+.well.drop.over {
+	
+	position: relative;
+	background-color: #ccc;
+	border-color: #aaa;
+
+}
+
+.well.drop.over:after {
+	
+	color: #999;
+
+}
+
+.well.drop:after {
+
+	content: attr(title);
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	color: #ccc;
+	-webkit-transform: translateX(-50%) translateY(-50%);
+
+}

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en" ng-app ng-controller="uploadController">
+<head>
+	<meta charset="UTF-8">
+	<title>test sg-upload-to-s3</title>
+
+	<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+	<link rel="stylesheet" href="demo.css">
+	<link rel="stylesheet" href="build.css">
+
+	<script src="build.js"></script>
+	<script src="sgUploadToS3.min.js"></script>
+	<script>require('angular')</script>
+
+</head>
+<body>
+
+	<div class="container">
+		
+		<div class="page-header">
+			
+			<h1>Upload</h1>
+
+		</div>
+
+		<form>
+			
+			<fieldset>
+				
+				<legend>Choose a file</legend>
+
+				<div class="row">
+
+					<div class="col-sm-4">
+						
+						<input type="file" multiple>
+						<div class="well drop" style="margin-top: 20px" title="drop a file"></div>
+						
+					</div>
+
+					<div class="col-sm-8">
+
+						<div ng-show="uploader.started">
+
+							<div class="progress">
+								<div class="progress-bar" ng-style="{width: uploader.data.progress + '%'}"></div>
+							</div>
+
+							<div class="alert alert-success hide">upload complete</div>
+							<div class="alert alert-danger hide">upload failed</div>
+
+							<table class="table">
+								<thead>
+									<tr>
+										<th style="width: 25%">File</th>
+										<th>Progress</th>
+										<th style="width: 5%"></th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr ng-repeat="upload in uploader.data.uploads">
+										<td style="position: relative">
+
+											<span class="glyphicon glyphicon-remove" ng-click="abortUpload(upload)" ng-hide="upload.upload.aborted || upload.progress == 100 || upload.error"></span>
+
+											{{upload.file.name}}
+
+										</td>
+										<td>
+
+											<div class="progress" style="margin: 0" ng-hide="upload.error">
+												<div class="progress-bar" ng-style="{width: upload.progress + '%'}"></div>
+											</div>
+
+											<code ng-show="upload.error">an error occurred - try again</code>
+
+										</td>
+										<td class="text-center"><span class="glyphicon glyphicon-ok" ng-show="upload.progress == 100" style="color: #4CBF7D"></span></td>
+									</tr>
+								</tbody>
+							</table>
+
+						</div>
+
+					</div>
+
+				</div>
+
+			</fieldset>
+
+		</form>
+
+	</div>
+
+	<script>
+
+		var dom = require('dom')
+		  , uid = require('sg-uid')
+		  , drop = require('drop')
+		  , updateScope = (function(){require('sg-apply-scope')()})
+
+		sgUploadToS3.on('start',    updateScope);
+		sgUploadToS3.on('progress', updateScope);
+		sgUploadToS3.on('end',      updateScope);
+
+		dom('input[type=file]').on('change', function(_event){
+
+			sgUploadToS3.upload(_event.target.files, null, true);
+
+		});
+
+		drop(dom('.well.drop').els[0], function(_event){
+
+			sgUploadToS3.upload(_event.items);
+
+		});
+
+		function uploadController($scope) {
+
+			window.scope = $scope;
+			scope.uploader = sgUploadToS3;
+
+			$scope.abortUpload = function(_upload) {
+
+				if ( ! confirm('Do you want to abort this upload?')) return;
+
+				_upload.upload.abort();
+
+			}
+
+		}
+
+	</script>
+
+	<script>document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></' + 'script>')</script>
+	
+</body>
+</html>
