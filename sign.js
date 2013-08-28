@@ -19,53 +19,33 @@
  * 
  */
 
-var crypto = require('crypto')
-  , config
+module.exports = function(_config){
 
-function sign(options) {
-
-	var expires = (Date.now() + options.expires) / 1000 | 0;
-
-	var str = options.method.toUpperCase()
-		+ '\n\n' + options.mime
-		+ '\n' + expires
-		+ '\nx-amz-acl:public-read'
-		+ '\n/' + options.bucket
-		+ '/' + options.name;
-
-	var sig = crypto
-		.createHmac('sha1', options.secret)
-		.update(str)
-		.digest('base64');
-
-	sig = encodeURIComponent(sig);
-
-	return 'http://' + options.bucket
-		+ '.' + config.region + '/'
-		+ options.name
-		+ '?Expires=' + expires
-		+ '&AWSAccessKeyId=' + options.key
-		+ '&Signature=' + sig;
-}
-
-module.exports = function(_config) {
-
-	config = _config;
+	var Policy = require('s3-policy')
 
 	return function(_req, _res, _next) {
 
-		var obj = {
-			bucket: config.bucket,
-			key: config.key,
-			secret: config.secret,
-			expires: 5 * 60 * 1000,
-			mime: _req.query.mime,
-			name: _req.query.name,
-			method: 'PUT'
+		var policy = Policy({
+
+			acl:       'public-read',
+			expires:   new Date(Date.now() + 3600000),
+			bucket:    _config.bucket,
+			secret:    _config.secret,
+			key:       _config.key,
+			name:      _config['name'] || '',
+			length:    _config['bytes'] | 524288000
+
+		});
+
+		var s3 = {
+			policy:    policy.policy,
+			signature: policy.signature,
+			bucket:    _config.bucket,
+			acl:       'public-read',
+			key:       _config.key,
 		};
 
-		_req.signed = sign(obj);
-		_next();
+		_res.json({s3: s3});
 
 	}
 

@@ -9,7 +9,7 @@
 	<link rel="stylesheet" href="build.css">
 
 	<script src="build.js"></script>
-	<script src="sgUploadToS3.min.js"></script>
+	<script src="sgUploadToS3.js"></script>
 	<script>require('angular')</script>
 
 </head>
@@ -105,7 +105,7 @@
 
 		dom('input[type=file]').on('change', function(_event){
 
-			sgUploadToS3.upload(_event.target.files, null, true);
+			sgUploadToS3.upload(_event.target.files, true);
 
 		});
 

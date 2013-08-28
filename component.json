@@ -13,13 +13,13 @@
 		"component/mime": "*",
 		"component/s3": "*",
 		"component/type": "*",
-		"davidtsuji/sg-uid": "*"
+		"davidtsuji/sg-uid": "*",
+		"visionmedia/superagent": "*"
 	},
 	"files": [
 		"sign.js"
 	],
 	"development":{
-		"visionmedia/mocha": "*",
 		"component/dom": "*",
 		"component/drop": "*",
 		"component/assert": "*",

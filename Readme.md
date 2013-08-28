@@ -14,12 +14,12 @@ $ component install davidtsuji/sg-upload-to-s3
 var upload = require('sg-upload-to-s3');
 
 upload.defaults.numSimultaneousUploads = 2;
-upload.defaults.signaturePath = '/signS3';
+upload.defaults.s3ConfigPath = '/config/s3';
 upload.defaults.generateFileName = false;
 ```
 
 - `numSimultaneousUploads` number of simultaneous uploads
-- `signaturePath` path to sign the s3 credentials
+- `s3ConfigPath` path to sign the s3 credentials
 - `generateFileName` use a generated file name instead
 
 ## API
@@ -27,7 +27,7 @@ upload.defaults.generateFileName = false;
 ```js
 var uploader = require('sg-upload-to-s3');
 
-uploader.upload(FileList[[, _signaturePath], _generateFileName]);
+uploader.upload(FileList[, _generateFileName]);
 
 // Events
 uploader.upload('start', function(_uploader){});
@@ -57,27 +57,20 @@ uploader.data.uploads[i].upload.abort();
 
 ### S3 Config
 
-An end point must be created `signaturePath` to sign the S3 credentials.
+An end point must be created `s3ConfigPath` to sign the S3 credentials.
 
 `sign.js` is included which can be used as middleware for express.
 
 *Express example*
 
 ```js
-var s3Signature = require('sign.js')({
+app.get('/config/s3', require(__dirname + 'sign.js')({
 
-	key:    "zdhim4jux81uxenybp55",
-	secret: "nm1q38dvwsu0bjumrskiamd8wag0uqr0fdnsxuq1",
-	bucket: "mybucket",
-	region: "s3-ap-southeast-2.amazonaws.com"
+    key:    'zdhim4jux81uxenybp55',
+    secret: 'nm1q38dvwsu0bjumrskiamd8wag0uqr0fdnsxuq1',
+    bucket: 'mybucket'
 
-});
-
-app.get('/signS3', s3Signature, function(_req, _res){
-
-	_res.send(_req.signed);
-
-});
+}));
 ```
 
 The S3 bucket requires a CORS configuration which includes your origin.
@@ -93,7 +86,7 @@ The S3 bucket requires a CORS configuration which includes your origin.
     </CORSRule>
     <CORSRule>
         <AllowedOrigin>http://localhost:5000</AllowedOrigin>
-        <AllowedMethod>PUT</AllowedMethod>
+        <AllowedMethod>POST</AllowedMethod>
         <MaxAgeSeconds>3000</MaxAgeSeconds>
         <AllowedHeader>*</AllowedHeader>
     </CORSRule>

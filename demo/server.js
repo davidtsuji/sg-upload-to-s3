@@ -11,20 +11,14 @@ app.use(app.router);
 app.use(express.static(path.join(__dirname)));
 app.use(express.static(path.join(__dirname + '/../build')));
 
-var s3Signature = require(__dirname + '/../sign')({
 
-	key:    "zdhim4jux81uxenybp55",
-	secret: "nm1q38dvwsu0bjumrskiamd8wag0uqr0fdnsxuq1",
-	bucket: "mybucket",
-	region: "s3-ap-southeast-2.amazonaws.com"
+app.get('/config/s3', require(__dirname + '/../sign')({
 
-})
+	key:    'zdhim4jux81uxenybp55',
+	secret: 'nm1q38dvwsu0bjumrskiamd8wag0uqr0fdnsxuq1',
+	bucket: 'mybucket'
 
-app.get('/signS3', s3Signature, function(_req, _res){
-
-	_res.send(_req.signed);
-
-});
+}));
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));

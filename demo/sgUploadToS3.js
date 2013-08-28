@@ -1155,8 +1155,11 @@ require.register("caolan-async/lib/async.js", function(exports, require, module)
 
 });
 require.register("component-indexof/index.js", function(exports, require, module){
+
+var indexOf = [].indexOf;
+
 module.exports = function(arr, obj){
-  if (arr.indexOf) return arr.indexOf(obj);
+  if (indexOf) return arr.indexOf(obj);
   for (var i = 0; i < arr.length; ++i) {
     if (arr[i] === obj) return i;
   }
@@ -2342,6 +2345,240 @@ module.exports = {
   ice: 'x-conference/x-cooltalk' }
 
 });
+require.register("component-event/index.js", function(exports, require, module){
+
+/**
+ * Bind `el` event `type` to `fn`.
+ *
+ * @param {Element} el
+ * @param {String} type
+ * @param {Function} fn
+ * @param {Boolean} capture
+ * @return {Function}
+ * @api public
+ */
+
+exports.bind = function(el, type, fn, capture){
+  if (el.addEventListener) {
+    el.addEventListener(type, fn, capture);
+  } else {
+    el.attachEvent('on' + type, fn);
+  }
+  return fn;
+};
+
+/**
+ * Unbind `el` event `type`'s callback `fn`.
+ *
+ * @param {Element} el
+ * @param {String} type
+ * @param {Function} fn
+ * @param {Boolean} capture
+ * @return {Function}
+ * @api public
+ */
+
+exports.unbind = function(el, type, fn, capture){
+  if (el.removeEventListener) {
+    el.removeEventListener(type, fn, capture);
+  } else {
+    el.detachEvent('on' + type, fn);
+  }
+  return fn;
+};
+
+});
+require.register("component-s3/index.js", function(exports, require, module){
+
+/**
+ * Module dependencies.
+ */
+
+var Emitter = require('emitter');
+var events = require('event');
+
+/**
+ * Expose `Upload`.
+ */
+
+module.exports = Upload;
+
+/**
+ * Validate global configuration.
+ *
+ * @api private
+ */
+
+function validateConfig() {
+  if (!S3.signature) throw new Error('S3.signature required');
+  if (!S3.bucket) throw new Error('S3.bucket required');
+  if (!S3.policy) throw new Error('S3.policy required');
+  if (!S3.key) throw new Error('S3.key required');
+  if (!S3.acl) throw new Error('S3.acl required');
+}
+
+/**
+ * Initialize a new `Upload` file` and options.
+ *
+ * Options:
+ *
+ *   - `name` remote filename or `file.name`
+ *   - `type` content-type or `file.type` / application/octet-stream
+ *
+ * Events:
+ *
+ *   - `error` an error occurred
+ *   - `abort` upload was aborted
+ *   - `progress` upload in progress (`e.percent` etc)
+ *   - `end` upload is complete
+ *
+ * TODO: progress
+ * TODO: add option for max parts
+ * TODO: add option for opting-out
+ *
+ * @param {File} file
+ * @param {Object} [options]
+ * @api private
+ */
+
+function Upload(file, opts) {
+  if (!(this instanceof Upload)) return new Upload(file, opts);
+  opts = opts || {};
+  validateConfig();
+  this.file = file;
+  this.type = opts.type || file.type || 'application/octet-stream';
+  this.name = opts.name || file.name;
+  this.bucketUrl = 'http://' + S3.bucket + '.s3.amazonaws.com';
+  this.url = this.bucketUrl + '/' + this.name;
+  this.signature = S3.signature;
+  this.bucket = S3.bucket;
+  this.policy = S3.policy;
+  this.key = S3.key;
+  this.acl = S3.acl;
+}
+
+/**
+ * Mixin emitter.
+ */
+
+Emitter(Upload.prototype);
+
+/**
+ * Upload the file to s3 and invoke `fn(err)` when complete.
+ *
+ * @param {Function} [fn]
+ * @api public
+ */
+
+Upload.prototype.end = function(fn){
+  var self = this;
+  fn = fn || function(){};
+
+  var xhr = this.xhr = new XMLHttpRequest;
+
+  // TODO: component
+  events.bind(xhr.upload, 'progress', function(e){
+    e.percent = e.loaded / e.total * 100;
+    self.emit('progress', e);
+  });
+
+  // TODO: component
+  xhr.onreadystatechange = function(){
+    if (4 != xhr.readyState) return;
+    var t = xhr.status / 100 | 0;
+    if (2 == t) return fn();
+    var err = new Error(xhr.responseText);
+    err.status = xhr.status;
+    fn(err);
+  };
+
+  // form
+  var form = new FormData;
+  form.append('key', this.name);
+  form.append('AWSAccessKeyId', this.key);
+  form.append('acl', this.acl);
+  form.append('policy', this.policy);
+  form.append('signature', this.signature);
+  form.append('Content-Type', this.type);
+  form.append('Content-Length', this.file.length);
+  form.append('file', this.file);
+
+  xhr.open('POST', this.bucketUrl, true);
+  xhr.send(form);
+};
+
+/**
+ * Abort the XHR.
+ *
+ * @api public
+ */
+
+Upload.prototype.abort = function(){
+  this.emit('abort');
+  this.xhr.abort();
+};
+
+});
+require.register("component-type/index.js", function(exports, require, module){
+
+/**
+ * toString ref.
+ */
+
+var toString = Object.prototype.toString;
+
+/**
+ * Return the type of `val`.
+ *
+ * @param {Mixed} val
+ * @return {String}
+ * @api public
+ */
+
+module.exports = function(val){
+  switch (toString.call(val)) {
+    case '[object Function]': return 'function';
+    case '[object Date]': return 'date';
+    case '[object RegExp]': return 'regexp';
+    case '[object Arguments]': return 'arguments';
+    case '[object Array]': return 'array';
+    case '[object String]': return 'string';
+  }
+
+  if (val === null) return 'null';
+  if (val === undefined) return 'undefined';
+  if (val && val.nodeType === 1) return 'element';
+  if (val === Object(val)) return 'object';
+
+  return typeof val;
+};
+
+});
+require.register("davidtsuji-sg-random-between/index.js", function(exports, require, module){
+module.exports = function(_min, _max) {
+
+	var min = _min < _max ? _min : _max
+	  , max = _min < _max ? _max : _min
+	  , minAndMaxAreNumbers = typeof min == 'number' && typeof max == 'number'
+
+	return minAndMaxAreNumbers ? Math.floor(Math.random() * (max - min + 1)) + min : NaN;
+
+}
+});
+require.register("davidtsuji-sg-uid/index.js", function(exports, require, module){
+var randomBetween = require('sg-random-between');
+
+module.exports = function(_length) {
+
+	var alphabet = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
+	  , length = typeof _length == 'number' && _length > 0 ? _length : 16
+	  , beginWith = alphabet[randomBetween(0, 25)]
+	  , uid = Math.random().toString(35).substr(2,length-1)
+
+	return beginWith + uid;
+
+}
+});
 require.register("RedVentures-reduce/index.js", function(exports, require, module){
 
 /**
@@ -2369,13 +2606,12 @@ module.exports = function(arr, fn, initial){
 };
 });
 require.register("visionmedia-superagent/lib/client.js", function(exports, require, module){
-
 /**
  * Module dependencies.
  */
 
-var Emitter = require('emitter')
-  , reduce = require('reduce');
+var Emitter = require('emitter');
+var reduce = require('reduce');
 
 /**
  * Root reference for iframes.
@@ -2390,6 +2626,30 @@ var root = 'undefined' == typeof window
  */
 
 function noop(){};
+
+/**
+ * Check if `obj` is a host object,
+ * we don't want to serialize these :)
+ *
+ * TODO: future proof, move to compoent land
+ *
+ * @param {Object} obj
+ * @return {Boolean}
+ * @api private
+ */
+
+function isHost(obj) {
+  var str = {}.toString.call(obj);
+
+  switch (str) {
+    case '[object File]':
+    case '[object Blob]':
+    case '[object FormData]':
+      return true;
+    default:
+      return false;
+  }
+}
 
 /**
  * Determine XHR.
@@ -2635,16 +2895,17 @@ function params(str){
  * @api private
  */
 
-function Response(xhr, options) {
+function Response(req, options) {
   options = options || {};
-  this.xhr = xhr;
-  this.text = xhr.responseText;
-  this.setStatusProperties(xhr.status);
-  this.header = this.headers = parseHeader(xhr.getAllResponseHeaders());
+  this.req = req;
+  this.xhr = this.req.xhr;
+  this.text = this.xhr.responseText;
+  this.setStatusProperties(this.xhr.status);
+  this.header = this.headers = parseHeader(this.xhr.getAllResponseHeaders());
   // getAllResponseHeaders sometimes falsely returns "" for CORS requests, but
   // getResponseHeader still works. so we get content-type even if getting
   // other headers fails.
-  this.header['content-type'] = xhr.getResponseHeader('content-type');
+  this.header['content-type'] = this.xhr.getResponseHeader('content-type');
   this.setHeaderProperties(this.header);
   this.body = this.parseBody(this.text);
 }
@@ -2756,9 +3017,16 @@ Response.prototype.setStatusProperties = function(status){
  */
 
 Response.prototype.toError = function(){
-  var msg = 'got ' + this.status + ' response';
+  var req = this.req;
+  var method = req.method;
+  var path = req.path;
+
+  var msg = 'cannot ' + method + ' ' + path + ' (' + this.status + ')';
   var err = new Error(msg);
   err.status = this.status;
+  err.method = method;
+  err.path = path;
+
   return err;
 };
 
@@ -2783,20 +3051,19 @@ function Request(method, url) {
   this.method = method;
   this.url = url;
   this.header = {};
-  this.set('X-Requested-With', 'XMLHttpRequest');
+  this._header = {};
   this.on('end', function(){
-    var res = new Response(self.xhr);
+    var res = new Response(self);
     if ('HEAD' == method) res.text = null;
     self.callback(null, res);
   });
 }
 
 /**
- * Inherit from `Emitter.prototype`.
+ * Mixin `Emitter`.
  */
 
-Request.prototype = new Emitter;
-Request.prototype.constructor = Request;
+Emitter(Request.prototype);
 
 /**
  * Set timeout to `ms`.
@@ -2867,8 +3134,21 @@ Request.prototype.set = function(field, val){
     }
     return this;
   }
-  this.header[field.toLowerCase()] = val;
+  this._header[field.toLowerCase()] = val;
+  this.header[field] = val;
   return this;
+};
+
+/**
+ * Get case-insensitive header `field` value.
+ *
+ * @param {String} field
+ * @return {String}
+ * @api private
+ */
+
+Request.prototype.getHeader = function(field){
+  return this._header[field.toLowerCase()];
 };
 
 /**
@@ -2899,6 +3179,21 @@ Request.prototype.type = function(type){
 };
 
 /**
+ * Set Authorization field value with `user` and `pass`.
+ *
+ * @param {String} user
+ * @param {String} pass
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.auth = function(user, pass){
+  var str = btoa(user + ':' + pass);
+  this.set('Authorization', 'Basic ' + str);
+  return this;
+};
+
+/**
 * Add query-string `val`.
 *
 * Examples:
@@ -2914,7 +3209,7 @@ Request.prototype.type = function(type){
 
 Request.prototype.query = function(val){
   if ('string' != typeof val) val = serialize(val);
-  this._query.push(val);
+  if (val) this._query.push(val);
   return this;
 };
 
@@ -2971,7 +3266,7 @@ Request.prototype.query = function(val){
 
 Request.prototype.send = function(data){
   var obj = isObject(data);
-  var type = this.header['content-type'];
+  var type = this.getHeader('Content-Type');
 
   // merge
   if (obj && isObject(this._data)) {
@@ -2980,7 +3275,7 @@ Request.prototype.send = function(data){
     }
   } else if ('string' == typeof data) {
     if (!type) this.type('form');
-    type = this.header['content-type'];
+    type = this.getHeader('Content-Type');
     if ('application/x-www-form-urlencoded' == type) {
       this._data = this._data
         ? this._data + '&' + data
@@ -3113,14 +3408,15 @@ Request.prototype.end = function(fn){
   xhr.open(this.method, this.url, true);
 
   // body
-  if ('GET' != this.method && 'HEAD' != this.method && 'string' != typeof data) {
+  if ('GET' != this.method && 'HEAD' != this.method && 'string' != typeof data && !isHost(data)) {
     // serialize stuff
-    var serialize = request.serialize[this.header['content-type']];
+    var serialize = request.serialize[this.getHeader('Content-Type')];
     if (serialize) data = serialize(data);
   }
 
   // set header fields
   for (var field in this.header) {
+    if (null == this.header[field]) continue;
     xhr.setRequestHeader(field, this.header[field]);
   }
 
@@ -3276,219 +3572,9 @@ request.put = function(url, data, fn){
 module.exports = request;
 
 });
-require.register("component-s3/index.js", function(exports, require, module){
-
-/**
- * Module dependencies.
- */
-
-var Emitter = require('emitter')
-  , request = require('superagent');
-
-/**
- * Expose `Upload`.
- */
-
-module.exports = Upload;
-
-/**
- * Initialize a new `Upload` file` and options.
- *
- * Options:
- *
- *   - `name` remote filename or `file.name`
- *   - `type` content-type or `file.type` / application/octet-stream
- *   - `route` signature GET route [/sign]
- *
- * Events:
- *
- *   - `error` an error occurred
- *   - `abort` upload was aborted
- *   - `progress` upload in progress (`e.percent` etc)
- *   - `end` upload is complete
- *
- * @param {File} file
- * @param {Object} [options]
- * @api private
- */
-
-function Upload(file, options) {
-  if (!(this instanceof Upload)) return new Upload(file, options);
-  options = options || {};
-  this.file = file;
-  this.type = options.type || file.type || 'application/octet-stream';
-  this.name = options.name || file.name;
-  this.route = options.route || '/sign';
-  this.header = {};
-}
-
-/**
- * Mixin emitter.
- */
-
-Emitter(Upload.prototype);
-
-/**
- * Set header `field` to `val`.
- *
- * @param {String} field
- * @param {String} val
- * @return {Upload} self
- * @api public
- */
-
-Upload.prototype.set = function(field, val){
-  this.header[field] = val;
-  return this;
-};
-
-/**
- * Fetch signed url and invoke `fn(err, url)`.
- *
- * @param {Function} fn
- * @api private
- */
-
-Upload.prototype.sign = function(fn){
-  request
-  .get(this.route)
-  .query({ name: this.name, mime: this.type })
-  .end(function(res){
-    fn(null, res.text);
-  });
-};
-
-/**
- * Upload the file and invoke `fn(err)`.
- *
- * @param {Function} [fn]
- * @api public
- */
-
-Upload.prototype.end = function(fn){
-  var self = this;
-  fn = fn || function(){};
-  this.sign(function(err, url){
-    if (err) return fn(err);
-    self.put(url, fn);
-  });
-};
-
-/**
- * PUT to `url` and invoke `fn(err)`.
- *
- * @param {String} url
- * @param {Function} fn
- * @api private
- */
-
-Upload.prototype.put = function(url, fn){
-  var self = this;
-  var req = this.req = request.put(url);
-
-  // header
-  req.set('X-Requested-With', null);
-  req.set('Content-Type', this.type);
-  req.set('x-amz-acl', 'public-read');
-
-  // custom fields
-  for (var key in this.header) {
-    req.set(key, this.header[key]);
-  }
-
-  // progress
-  req.on('progress', function(e){
-    self.emit('progress', e);
-  });
-
-  // send
-  var file = this.file.toFile
-    ? this.file.toFile()
-    : this.file;
-
-  req.send(file);
-
-  req.end(function(res){
-    if (res.error) return fn(res.error);
-    self.emit('end');
-    fn();
-  });
-};
-
-/**
- * Abort the XHR.
- *
- * @api public
- */
-
-Upload.prototype.abort = function(){
-  this.emit('abort');
-  this.req.abort();
-};
-
-});
-require.register("component-type/index.js", function(exports, require, module){
-
-/**
- * toString ref.
- */
-
-var toString = Object.prototype.toString;
-
-/**
- * Return the type of `val`.
- *
- * @param {Mixed} val
- * @return {String}
- * @api public
- */
-
-module.exports = function(val){
-  switch (toString.call(val)) {
-    case '[object Function]': return 'function';
-    case '[object Date]': return 'date';
-    case '[object RegExp]': return 'regexp';
-    case '[object Arguments]': return 'arguments';
-    case '[object Array]': return 'array';
-    case '[object String]': return 'string';
-  }
-
-  if (val === null) return 'null';
-  if (val === undefined) return 'undefined';
-  if (val && val.nodeType === 1) return 'element';
-  if (val === Object(val)) return 'object';
-
-  return typeof val;
-};
-
-});
-require.register("davidtsuji-sg-random-between/index.js", function(exports, require, module){
-module.exports = function(_min, _max) {
-
-	var min = _min < _max ? _min : _max
-	  , max = _min < _max ? _max : _min
-	  , minAndMaxAreNumbers = typeof min == 'number' && typeof max == 'number'
-
-	return minAndMaxAreNumbers ? Math.floor(Math.random() * (max - min + 1)) + min : NaN;
-
-}
-});
-require.register("davidtsuji-sg-uid/index.js", function(exports, require, module){
-var randomBetween = require('sg-random-between');
-
-module.exports = function(_length) {
-
-	var alphabet = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
-	  , length = typeof _length == 'number' && _length > 0 ? _length : 16
-	  , beginWith = alphabet[randomBetween(0, 25)]
-	  , uid = Math.random().toString(35).substr(2,length-1)
-
-	return beginWith + uid;
-
-}
-});
 require.register("sg-upload-to-s3/index.js", function(exports, require, module){
 var async = require('async')
+  , request = require('superagent')
   , uid = require('sg-uid')
   , mime = require('mime')
   , type = require('type')
@@ -3523,7 +3609,6 @@ function processUpload(_file, _callback) {
 
 		var abortedFiles;
 
-		self.data.totalBytes -= _file.file.size;
 
 		for (var i=0; i<self.data.uploads.length; i++) {
 
@@ -3535,7 +3620,6 @@ function processUpload(_file, _callback) {
 		}
 
 		self.emit('abort', abortedFiles, self);
-		_callback();
 
 	});
 
@@ -3613,9 +3697,7 @@ exports.data = {
 
 }
 
-exports.upload = function(_files, _signaturePath, _generateFileName) {
-
-	console.log(_files);
+exports.upload = function(_files, _generateFileName) {
 
 	var self = this;
 
@@ -3634,7 +3716,6 @@ exports.upload = function(_files, _signaturePath, _generateFileName) {
 			file: _files[i],
 			progress: 0,
 			fileName: (_generateFileName || self.defaults.generateFileName) ? getUTCUnixTimestamp() + '-' + uid(4) + '.' + lookupFileExtension(_files[i]) : _files[i].name,
-			route: _signaturePath || self.defaults.signaturePath
 
 		}
 
@@ -3649,84 +3730,23 @@ exports.upload = function(_files, _signaturePath, _generateFileName) {
 exports.defaults = {
 
 	numSimultaneousUploads: 2,
-	signaturePath: '/signS3',
+	s3ConfigPath: '/config/s3',
 	generateFileName: false,
 
 }
-});
-require.register("sg-upload-to-s3/sign.js", function(exports, require, module){
-/**
- * S3 Buckets require a CORS configuration that includes your origin in the <AllowedOrigin>
- *
- * <?xml version="1.0" encoding="UTF-8"?>
- * <CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
- *     <CORSRule>
- *         <AllowedOrigin>*</AllowedOrigin>
- *         <AllowedMethod>GET</AllowedMethod>
- *         <MaxAgeSeconds>3000</MaxAgeSeconds>
- *         <AllowedHeader>Authorization</AllowedHeader>
- *     </CORSRule>
- *     <CORSRule>
- *         <AllowedOrigin>http://localhost:5000</AllowedOrigin>
- *         <AllowedMethod>PUT</AllowedMethod>
- *         <MaxAgeSeconds>3000</MaxAgeSeconds>
- *         <AllowedHeader>*</AllowedHeader>
- *     </CORSRule>
- * </CORSConfiguration>
- * 
- */
 
-var crypto = require('crypto')
-  , config
+setTimeout(function(){
 
-function sign(options) {
+	request
+		.get(exports.defaults.s3ConfigPath)
+		.set('Content-Type', 'application/json')
+		.end(function(_error, _res){
 
-	var expires = (Date.now() + options.expires) / 1000 | 0;
+			window.S3 = _res.body.s3;
 
-	var str = options.method.toUpperCase()
-		+ '\n\n' + options.mime
-		+ '\n' + expires
-		+ '\nx-amz-acl:public-read'
-		+ '\n/' + options.bucket
-		+ '/' + options.name;
+		});
 
-	var sig = crypto
-		.createHmac('sha1', options.secret)
-		.update(str)
-		.digest('base64');
-
-	sig = encodeURIComponent(sig);
-
-	return 'http://' + options.bucket
-		+ '.' + config.region + '/'
-		+ options.name
-		+ '?Expires=' + expires
-		+ '&AWSAccessKeyId=' + options.key
-		+ '&Signature=' + sig;
-}
-
-module.exports = function(_config) {
-
-	config = _config;
-
-	return function(_req, _res, _next) {
-
-		var obj = {
-			bucket: config.bucket,
-			key: config.key,
-			secret: config.secret,
-			expires: 5 * 60 * 1000,
-			mime: _req.query.mime,
-			name: _req.query.name,
-			method: 'PUT'
-		};
-
-		_req.signed = sign(obj);
-		_next();
-
-	}
-
-}
+}, 100);
 });
 require.alias("caolan-async/lib/async.js", "sg-upload-to-s3/deps/async/lib/async.js");
 require.alias("caolan-async/lib/async.js", "sg-upload-to-s3/deps/async/index.js");
@@ -3746,14 +3766,7 @@ require.alias("component-s3/index.js", "s3/index.js");
 require.alias("component-emitter/index.js", "component-s3/deps/emitter/index.js");
 require.alias("component-indexof/index.js", "component-emitter/deps/indexof/index.js");
 
-require.alias("visionmedia-superagent/lib/client.js", "component-s3/deps/superagent/lib/client.js");
-require.alias("visionmedia-superagent/lib/client.js", "component-s3/deps/superagent/index.js");
-require.alias("component-emitter/index.js", "visionmedia-superagent/deps/emitter/index.js");
-require.alias("component-indexof/index.js", "component-emitter/deps/indexof/index.js");
-
-require.alias("RedVentures-reduce/index.js", "visionmedia-superagent/deps/reduce/index.js");
-
-require.alias("visionmedia-superagent/lib/client.js", "visionmedia-superagent/index.js");
+require.alias("component-event/index.js", "component-s3/deps/event/index.js");
 
 require.alias("component-type/index.js", "sg-upload-to-s3/deps/type/index.js");
 require.alias("component-type/index.js", "type/index.js");
@@ -3766,6 +3779,16 @@ require.alias("davidtsuji-sg-random-between/index.js", "davidtsuji-sg-uid/deps/s
 require.alias("davidtsuji-sg-random-between/index.js", "davidtsuji-sg-random-between/index.js");
 
 require.alias("davidtsuji-sg-uid/index.js", "davidtsuji-sg-uid/index.js");
+
+require.alias("visionmedia-superagent/lib/client.js", "sg-upload-to-s3/deps/superagent/lib/client.js");
+require.alias("visionmedia-superagent/lib/client.js", "sg-upload-to-s3/deps/superagent/index.js");
+require.alias("visionmedia-superagent/lib/client.js", "superagent/index.js");
+require.alias("component-emitter/index.js", "visionmedia-superagent/deps/emitter/index.js");
+require.alias("component-indexof/index.js", "component-emitter/deps/indexof/index.js");
+
+require.alias("RedVentures-reduce/index.js", "visionmedia-superagent/deps/reduce/index.js");
+
+require.alias("visionmedia-superagent/lib/client.js", "visionmedia-superagent/index.js");
 
 require.alias("sg-upload-to-s3/index.js", "sg-upload-to-s3/index.js");
 

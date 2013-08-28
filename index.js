@@ -1,4 +1,5 @@
 var async = require('async')
+  , request = require('superagent')
   , uid = require('sg-uid')
   , mime = require('mime')
   , type = require('type')
@@ -33,7 +34,6 @@ function processUpload(_file, _callback) {
 
 		var abortedFiles;
 
-		self.data.totalBytes -= _file.file.size;
 
 		for (var i=0; i<self.data.uploads.length; i++) {
 
@@ -45,7 +45,6 @@ function processUpload(_file, _callback) {
 		}
 
 		self.emit('abort', abortedFiles, self);
-		_callback();
 
 	});
 
@@ -123,9 +122,7 @@ exports.data = {
 
 }
 
-exports.upload = function(_files, _signaturePath, _generateFileName) {
-
-	console.log(_files);
+exports.upload = function(_files, _generateFileName) {
 
 	var self = this;
 
@@ -144,7 +141,6 @@ exports.upload = function(_files, _signaturePath, _generateFileName) {
 			file: _files[i],
 			progress: 0,
 			fileName: (_generateFileName || self.defaults.generateFileName) ? getUTCUnixTimestamp() + '-' + uid(4) + '.' + lookupFileExtension(_files[i]) : _files[i].name,
-			route: _signaturePath || self.defaults.signaturePath
 
 		}
 
@@ -159,7 +155,20 @@ exports.upload = function(_files, _signaturePath, _generateFileName) {
 exports.defaults = {
 
 	numSimultaneousUploads: 2,
-	signaturePath: '/signS3',
+	s3ConfigPath: '/config/s3',
 	generateFileName: false,
 
 }
+
+setTimeout(function(){
+
+	request
+		.get(exports.defaults.s3ConfigPath)
+		.set('Content-Type', 'application/json')
+		.end(function(_error, _res){
+
+			window.S3 = _res.body.s3;
+
+		});
+
+}, 100);
